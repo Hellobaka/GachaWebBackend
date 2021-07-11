@@ -1,0 +1,137 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>GachaWebBackend</name>
+    </assembly>
+    <members>
+        <member name="T:GachaWebBackend.Appsettings">
+            <summary>
+            appsettings.json操作类
+            </summary>
+        </member>
+        <member name="M:GachaWebBackend.Appsettings.app(System.String[])">
+            <summary>
+            封装要操作的字符
+            </summary>
+            <param name="sections">节点配置</param>
+            <returns></returns>
+        </member>
+        <member name="M:GachaWebBackend.Appsettings.app``1(System.String[])">
+            <summary>
+            递归获取配置信息数组
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="sections"></param>
+            <returns></returns>
+        </member>
+        <member name="M:GachaWebBackend.AuthHelper.JwtHelper.IssueJwt(GachaWebBackend.AuthHelper.JwtHelper.TokenModelJwt)">
+            <summary>
+            颁发JWT字符串
+            </summary>
+            <param name="tokenModel"></param>
+            <returns></returns>
+        </member>
+        <member name="M:GachaWebBackend.AuthHelper.JwtHelper.SerializeJwt(System.String)">
+            <summary>
+            解析
+            </summary>
+            <param name="jwtStr"></param>
+            <returns></returns>
+        </member>
+        <member name="T:GachaWebBackend.AuthHelper.JwtHelper.TokenModelJwt">
+            <summary>
+            令牌
+            </summary>
+        </member>
+        <member name="P:GachaWebBackend.AuthHelper.JwtHelper.TokenModelJwt.Uid">
+            <summary>
+            Id
+            </summary>
+        </member>
+        <member name="P:GachaWebBackend.AuthHelper.JwtHelper.TokenModelJwt.Role">
+            <summary>
+            角色
+            </summary>
+        </member>
+        <member name="P:GachaWebBackend.AuthHelper.JwtHelper.TokenModelJwt.Work">
+            <summary>
+            职能
+            </summary>
+        </member>
+        <member name="M:GachaWebBackend.Controllers.PoolController.GetAll">
+            <summary>
+            返回数据
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:GachaWebBackend.Controllers.WeatherForecastController">
+            <summary>
+            获取随机天气预报
+            </summary>
+        </member>
+        <member name="M:GachaWebBackend.Controllers.WeatherForecastController.Get">
+            <summary>
+            返回数据
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:GachaWebBackend.Controllers.WebUserController">
+            <summary>
+            用户管理模块
+            </summary>
+        </member>
+        <member name="M:GachaWebBackend.Controllers.WebUserController.Login(Newtonsoft.Json.Linq.JObject)">
+            <summary>
+            登录
+            </summary>
+            <param name="json">Json文本，格式: {"name":"xxx", "password":"xxx"}</param>
+            <returns>data中是Jwt授权Token</returns>
+        </member>
+        <member name="M:GachaWebBackend.Controllers.WebUserController.Register(GachaWebBackend.Model.WebUser)">
+            <summary>
+            注册
+            </summary>
+            <param name="user">Json文本, 请按照WebUser类的格式填写</param>
+        </member>
+        <member name="M:GachaWebBackend.Controllers.WebUserController.VerifyEmail(System.String)">
+            <summary>
+            验证邮箱状态
+            </summary>
+            <param name="email">校验邮箱是否已经被使用</param>
+        </member>
+        <member name="M:GachaWebBackend.Controllers.WebUserController.VerifyQQ(System.Int64)">
+            <summary>
+            验证QQ状态
+            </summary>
+            <param name="QQ">校验QQ是否已被注册</param>
+        </member>
+        <member name="T:GachaWebBackend.CorsMiddleware">
+            <summary>
+            跨域中间件
+            </summary>
+        </member>
+        <member name="M:GachaWebBackend.CorsMiddleware.#ctor(Microsoft.AspNetCore.Http.RequestDelegate)">
+            <summary>
+            管道执行到该中间件时候下一个中间件的RequestDelegate请求委托，如果有其它参数，也同样通过注入的方式获得
+            </summary>
+            <param name="next">下一个处理者</param>
+        </member>
+        <member name="M:GachaWebBackend.CorsMiddleware.Invoke(Microsoft.AspNetCore.Http.HttpContext)">
+            <summary>
+            自定义中间件要执行的逻辑
+            </summary>
+            <param name="context"></param>
+            <returns></returns>
+        </member>
+        <member name="M:GachaWebBackend.Helper.SqlHelper.CreateDB">
+            <summary>
+            数据库不存在时将会创建
+            </summary>
+        </member>
+        <member name="T:GachaWebBackend.WeatherForecast">
+            <summary>
+            天气预报实体
+            </summary>
+        </member>
+    </members>
+</doc>
