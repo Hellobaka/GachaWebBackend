@@ -84,7 +84,7 @@ namespace GachaWebBackend.AuthHelper
 
                 tokenModelJwt = new TokenModelJwt
                 {
-                    Uid = Convert.ToInt32(jwtToken.Id),
+                    Uid = Convert.ToInt64(jwtToken.Id),
                     Role = role != null ? role.ToString() : "",
                 };
             }
