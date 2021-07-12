@@ -46,6 +46,11 @@ namespace GachaWebBackend.Helper
             using var db = GetInstance();
             return db.Queryable<WebUser>().First(x => (x.Email == username || x.QQ.ToString() == username || x.Nickname == username) && x.Password == password);
         }
+        public static WebUser GetUserByID(long QQ)
+        {
+            using var db = GetInstance();
+            return db.Queryable<WebUser>().First(x => x.QQ == QQ);
+        }
         public static bool Register(WebUser user)
         {
             using var db = GetInstance();
