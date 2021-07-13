@@ -92,7 +92,7 @@ namespace GachaWebBackend.Helper
         }
         public static E_Mail GetTemplateMail(string subject, string body, string[] address)
         {
-            JObject secret = JObject.Parse(System.IO.File.ReadAllText(@"E:\编程\Asp.net\txcloudSecret.json"));
+            JObject secret = JObject.Parse(System.IO.File.ReadAllText(Appsettings.app(new string[] { "SecretConfig" })));
             return new E_Mail() 
             {
                 Address = address,

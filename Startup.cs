@@ -73,7 +73,7 @@ namespace GachaWebBackend
             #region 【第二步：配置认证服务】
             var audienceConfig = Configuration.GetSection("Audience");
             var symmetricKeyAsBase64 = AppSecretConfig.Audience_Secret_String;
-            var keyByteArray = Encoding.ASCII.GetBytes(symmetricKeyAsBase64);
+            var keyByteArray = Encoding.UTF8.GetBytes(symmetricKeyAsBase64);
             var signingKey = new SymmetricSecurityKey(keyByteArray);
 
             var signingCredentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);

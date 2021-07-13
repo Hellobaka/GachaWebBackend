@@ -116,7 +116,7 @@ namespace GachaWebBackend.Controllers
         {
             try
             {
-                JObject secret = JObject.Parse(System.IO.File.ReadAllText(@"E:\编程\Asp.net\txcloudSecret.json"));
+                JObject secret = JObject.Parse(System.IO.File.ReadAllText(Appsettings.app(new string[] { "SecretConfig" })));
                 Credential cred = new()
                 {
                     SecretId = secret["SecretId"].ToString(),

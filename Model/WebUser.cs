@@ -18,5 +18,6 @@ namespace GachaWebBackend.Model
 
         public long? Developer { get; set; }
         public bool CheckStatus { get; set; }
+        public string Avatar { get; set; }
     }
 }

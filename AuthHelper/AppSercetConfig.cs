@@ -44,7 +44,7 @@ namespace GachaWebBackend.AuthHelper
                 catch (System.Exception) { }
             }
 
-            return conn[conn.Length - 1];
+            return conn[^1];
         }
 
     }
