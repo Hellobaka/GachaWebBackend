@@ -191,7 +191,7 @@ namespace GachaWebBackend.Controllers
             }
             else
             {
-                WebCommonHelper.OutErrorLog($"验证码验证失败，用户: {emailCaptcha[sessionID].Email}");
+                WebCommonHelper.OutErrorLog($"验证码验证失败");
                 return WebCommonHelper.SetError("无效的验证码，若确认无误尝试重新获取");
             }
         }
