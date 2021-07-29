@@ -1,6 +1,9 @@
 ﻿using GachaWebBackend.Model;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.IO;
+using System.IO.Compression;
 using System.Net;
 using System.Net.Mail;
 using System.Security.Cryptography;
@@ -123,6 +126,24 @@ namespace GachaWebBackend.Helper
             RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
             rng.GetBytes(bytes);
             return BitConverter.ToInt32(bytes, 0);
+        }
+        /// <summary>
+        /// 将字符串压缩成Gzip格式的byte数组
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
+        public static byte[] WriteGzip(string str)
+        {
+            byte[] rawData = Encoding.UTF8.GetBytes(str);
+            using MemoryStream ms = new();
+            GZipStream compressedzipStream = new(ms, CompressionMode.Compress, true);
+            compressedzipStream.Write(rawData, 0, rawData.Length);
+            compressedzipStream.Close();
+            return ms.ToArray();
+        }
+        public static string ToJson(this object obj)
+        {
+            return JsonConvert.SerializeObject(obj);
         }
     }
 }
