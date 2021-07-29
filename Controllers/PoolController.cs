@@ -15,12 +15,12 @@ namespace GachaWebBackend.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet]
-        [Route("showall")]
+        [Route("getAll")]
         public ApiResponse GetAll()
         {
             try
             {
-                return WebCommonHelper.SetOk("查询成功", SQLHelper.GetAllPools());
+                return WebCommonHelper.SetOk("查询成功", WebCommonHelper.WriteGzip(SQLHelper.GetAllPools().ToJson()));
             }
             catch(Exception e)
             {
