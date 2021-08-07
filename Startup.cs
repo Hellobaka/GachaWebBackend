@@ -18,6 +18,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using PublicInfos;
 using Swashbuckle.AspNetCore.Filters;
 
 namespace GachaWebBackend
@@ -36,6 +37,25 @@ namespace GachaWebBackend
         {
             new Appsettings(Configuration);
             var basePath = AppDomain.CurrentDomain.BaseDirectory;
+
+            foreach (var item in Directory.GetFiles("Libs"))
+            {
+                Console.WriteLine($"[+] Load Lib from {item}");
+                Assembly.LoadFrom(item);
+            }
+            Stopwatch sw = new();
+            Console.WriteLine($"[+] 初始化数据库");
+            sw.Start();
+            SqlHelper.CreateDB();
+            MainSave.DBPath = Appsettings.app(new string[] { "DBPath" });
+            sw.Stop();
+            Console.WriteLine($"[+] 初始化完成，耗时: {sw.ElapsedMilliseconds} ms");
+            Console.WriteLine($"[+] 载入用户配置与问答");
+            sw.Restart();
+            SqlHelper.LoadConfig();
+            sw.Stop();
+            Console.WriteLine($"[+] 载入完成，耗时: {sw.ElapsedMilliseconds} ms");
+
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
@@ -112,25 +132,6 @@ namespace GachaWebBackend
                      }
                  };
              });
-
-            foreach (var item in Directory.GetFiles("Libs"))
-            {
-                Console.WriteLine($"[+] Load Lib from {item}");
-                Assembly.LoadFrom(item);
-            }
-            Stopwatch sw = new();
-            Console.WriteLine($"[+] 初始化数据库");
-            sw.Start();
-            SqlHelper.CreateDB();
-            sw.Stop();
-            Console.WriteLine($"[+] 初始化完成，耗时: {sw.ElapsedMilliseconds} ms");
-
-            Console.WriteLine($"[+] 载入用户配置与问答");
-            sw.Restart();
-            SqlHelper.LoadConfig();
-            sw.Stop();
-            Console.WriteLine($"[+] 载入完成，耗时: {sw.ElapsedMilliseconds} ms");
-
             #endregion 
         }
 

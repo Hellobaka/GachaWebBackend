@@ -27,8 +27,8 @@ namespace GachaWebBackend.Helper
             using (var db = GetInstance())
             {
                 //TODO: 插件发布时替换此处
-                db.DbMaintenance.CreateDatabase(DBPath);
-                //db.DbMaintenance.CreateDatabase(Path.Combine(Environment.CurrentDirectory, "data.db"));
+                //db.DbMaintenance.CreateDatabase(DBPath);
+                db.DbMaintenance.CreateDatabase(Path.Combine(Environment.CurrentDirectory, "data.db"));
                 db.CodeFirst.InitTables(typeof(DB_Repo));
                 db.CodeFirst.InitTables(typeof(DB_User));
                 db.CodeFirst.InitTables(typeof(Pool));
@@ -41,6 +41,11 @@ namespace GachaWebBackend.Helper
             }
         }
         #region ---WebUsers---
+        public static void UpdateUser(this WebUser user)
+        {
+            using var db = GetInstance();
+            db.Updateable(user).ExecuteCommand();
+        }
         public static WebUser Login(string username, string password)
         {
             using var db = GetInstance();

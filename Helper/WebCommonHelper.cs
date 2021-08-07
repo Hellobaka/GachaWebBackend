@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Drawing;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
@@ -11,33 +12,74 @@ using System.Text;
 
 namespace GachaWebBackend.Helper
 {
+    /// <summary>
+    /// 工具类
+    /// </summary>
     public static class WebCommonHelper
     {
+        /// <summary>
+        /// MD5盐值
+        /// </summary>
         private const string _SALT = "33ae826c28108ccfd6890ff6d942be89";
+        /// <summary>
+        /// 返回模板正常对象
+        /// </summary>
+        /// <param name="msg">正常消息 默认为 ok</param>
+        /// <param name="data">附带正常对象 默认为 null</param>
+
         public static ApiResponse SetOk(string msg = "ok", object data = null)
         {
-            return new ApiResponse { code = 200, msg = msg, data = data };
+            return new() { code = 200, msg = msg, data = data };
         }
+        /// <summary>
+        /// 返回模板错误对象
+        /// </summary>
+        /// <param name="msg">错误消息 默认为 error</param>
+        /// <param name="data">附带错误对象 默认为 null</param>
         public static ApiResponse SetError(string msg = "error", object data = null)
         {
-            return new ApiResponse { code = 404, msg = msg, data = data };
+            return new() { code = 404, msg = msg, data = data };
         }
+        /// <summary>
+        /// 比较关键属性
+        /// </summary>
+        /// <param name="user"></param>
+        /// <param name="target"></param>
+        /// <returns></returns>
         public static bool CompareKeyProp(this WebUser user, WebUser target)
         {
             return user.Email == target.Email || user.QQ == target.QQ;
         }
+        /// <summary>
+        /// 模板正常日志
+        /// </summary>
+        /// <param name="msg">日志文本</param>
         public static void OutSuccessLog(string msg)
         {
             Console.WriteLine($"[+] [{GetLogTime()}] {msg}");
+            //TODO: Database
         }
+        /// <summary>
+        /// 模板错误日志
+        /// </summary>
+        /// <param name="msg">日志文本</param>
         public static void OutErrorLog(string msg)
         {
             Console.WriteLine($"[-] [{GetLogTime()}] {msg}");
+            //TODO: Database
         }
+        /// <summary>
+        /// 获取长时间
+        /// </summary>
         public static string GetLogTime()
         {
             return DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
         }
+        /// <summary>
+        /// MD5加密
+        /// </summary>
+        /// <param name="str">待加密字符串</param>
+        /// <returns>16位小写md5</returns>
         public static string MD5Encrypt(string str)
         {
             str = _SALT + str;
@@ -50,6 +92,10 @@ namespace GachaWebBackend.Helper
             return output.ToString();
         }
         //https://www.cnblogs.com/xwcs/p/13508438.html
+        /// <summary>
+        /// SMTP发送邮件
+        /// </summary>
+        /// <param name="M">邮件对象</param>
         public static void SendEmail(E_Mail M)
         {
             try
@@ -93,9 +139,16 @@ namespace GachaWebBackend.Helper
                 Console.WriteLine($"[-] 发送邮件发生错误：{e.Message}");
             }
         }
+        /// <summary>
+        /// 初始化邮箱发送模板
+        /// </summary>
+        /// <param name="subject">标题</param>
+        /// <param name="body">内容</param>
+        /// <param name="address">发送地址</param>
+        /// <returns></returns>
         public static E_Mail GetTemplateMail(string subject, string body, string[] address)
         {
-            JObject secret = JObject.Parse(System.IO.File.ReadAllText(Appsettings.app(new string[] { "SecretConfig" })));
+            JObject secret = JObject.Parse(File.ReadAllText(Appsettings.app(new[] { "SecretConfig" })));
             return new E_Mail() 
             {
                 Address = address,
@@ -141,9 +194,28 @@ namespace GachaWebBackend.Helper
             compressedzipStream.Close();
             return ms.ToArray();
         }
+        /// <summary>
+        /// 扩展方法_JsonConvert.SerializeObject的简化封装
+        /// </summary>
+        /// <param name="obj">待转json的简单对象</param>
+        /// <returns>json文本</returns>
         public static string ToJson(this object obj)
         {
             return JsonConvert.SerializeObject(obj);
+        }
+        /// <summary>
+        /// 图片转base64
+        /// </summary>
+        /// <param name="img">待处理图片</param>
+        /// <returns>base64</returns>
+        public static string Image2Base64(Image img)
+        {
+            using MemoryStream ms = new();
+            img.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+            ms.Position = 0;
+            byte[] b = new byte[ms.Length];
+            ms.Read(b, 0, (int) ms.Length);
+            return Convert.ToBase64String(b);
         }
     }
 }
