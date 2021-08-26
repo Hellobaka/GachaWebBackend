@@ -1,5 +1,6 @@
 ﻿using GachaWebBackend.Helper;
 using GachaWebBackend.Model;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Drawing;
@@ -45,7 +46,6 @@ namespace GachaWebBackend.Controllers
         /// 对试用抽卡额度的记录
         /// </summary>
         private static Dictionary<string, ApiCallCount> CallNumber { get; set; } = new();
-
         /// <summary>
         /// 试用抽卡
         /// </summary>

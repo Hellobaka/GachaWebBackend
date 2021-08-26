@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using PublicInfos;
 using System;
 using System.Linq;
+using System.Threading;
 
 namespace GachaWebBackend.Controllers
 {
@@ -12,23 +13,42 @@ namespace GachaWebBackend.Controllers
     [Route("api/v1/[controller]")]
     public class PoolController : ControllerBase
     {
+        static string PoolsCache = "";
         /// <summary>
         /// 返回数据
         /// </summary>
         /// <returns></returns>
         [HttpGet]
         [Route("getAll")]
-        public ApiResponse GetAll()
+        public ApiResponse GetAll(bool updateCache = false)
         {
             try
             {
-                return WebCommonHelper.SetOk("查询成功", WebCommonHelper.WriteGzip(SQLHelper.GetAllPools().ToJson()));
+                if (string.IsNullOrWhiteSpace(PoolsCache) || updateCache)
+                    CallCache();
+                return WebCommonHelper.SetOk("查询成功", WebCommonHelper.WriteGzip(PoolsCache));
             }
             catch (Exception e)
             {
                 Response.StatusCode = 404;
                 return WebCommonHelper.SetError(e.Message + "\n" + e.StackTrace);
             }
+        }
+        /// <summary>
+        /// 卡池缓存
+        /// </summary>
+        /// <param name="cacheTimeOut">缓存过期时长</param>
+        public void CallCache(int cacheTimeOut = 12 * 60 * 60 * 1000)
+        {
+            PoolsCache = SQLHelper.GetAllPools().ToJson();
+            WebCommonHelper.OutSuccessLog($"卡池缓存成功，在{cacheTimeOut / 1000}秒之后缓存失效");
+
+            Thread thread = new(() =>
+            {
+                Thread.Sleep(cacheTimeOut);
+                PoolsCache = string.Empty;
+            });
+            thread.Start();
         }
         [HttpGet]
         [Route("setLike")]
