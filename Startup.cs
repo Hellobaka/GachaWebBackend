@@ -86,10 +86,9 @@ namespace GachaWebBackend
             // 然后这么写 [Authorize(Policy = "Admin")]
             services.AddAuthorization(options =>
             {
-                options.AddPolicy("Client", policy => policy.RequireRole("Client").Build());
-                options.AddPolicy("Admin", policy => policy.RequireRole("Admin").Build());
+                options.AddPolicy("DeveloperOnly", policy => policy.RequireRole("System", "Developer").Build());
+                options.AddPolicy("All", policy => policy.RequireRole("System", "Developer", "User").Build());
                 options.AddPolicy("System", policy => policy.RequireRole("System").Build());
-                options.AddPolicy("SystemOrAdmin", policy => policy.RequireRole("Admin", "System"));
             });
 
             #region 【第二步：配置认证服务】
@@ -153,9 +152,16 @@ namespace GachaWebBackend
             });
             app.UseRouting();
 
+            //app.UseStaticFiles();
+            //// 使用cookie
+            //app.UseCookiePolicy();
+            //// 返回错误码
+            //app.UseStatusCodePages();//把错误码返回前台，比如是404
+
             app.UseAuthentication();
 
             app.UseAuthorization();
+
             app.UseMiddleware<CorsMiddleware>();
             app.UseEndpoints(endpoints =>
             {

@@ -1,4 +1,5 @@
-﻿using GachaWebBackend.Model;
+﻿using GachaWebBackend.AuthHelper;
+using GachaWebBackend.Model;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -90,6 +91,10 @@ namespace GachaWebBackend.Helper
                 output.Append(result[i].ToString("x2"));
             }
             return output.ToString();
+        }
+        public static long GetQQFromJwt(Microsoft.AspNetCore.Http.IHeaderDictionary header)
+        {
+            return JwtHelper.SerializeJwt(header["Authorization"].ToString().Replace("Bearer ", "")).Uid;
         }
         //https://www.cnblogs.com/xwcs/p/13508438.html
         /// <summary>

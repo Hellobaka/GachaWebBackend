@@ -17,7 +17,7 @@ namespace GachaWebBackend.Helper
         {
             try
             {
-                int baodiCount = 0;
+                int baodiCount = 1;
                 Pool destPool = SQLHelper.GetPoolByID(poolID);
                 //预构建图片保存目录
                 string resultPicPath = Path.Combine("Result\\img", destPool.Name);
@@ -28,7 +28,8 @@ namespace GachaWebBackend.Helper
                     MainSave.ApplicationConfig = ConfigCache.UserConfigs[0];
                     ls = GachaCore.DoGacha(destPool, multiMode? destPool.MultiGachaNumber : 1, ref baodiCount);
                 }
-
+                Random rd = new Random();
+                ls.ForEach(x => x.IsNew = rd.NextDouble() < 0.5);
                 string filename = Path.Combine(resultPicPath, DateTime.Now.ToString("yyyyMMddHHmmss") + ".png");
                 using var img = GachaCore.DrawGachaResult(ls, destPool);
                 img.Save(filename);

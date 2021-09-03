@@ -1,5 +1,6 @@
 ﻿using GachaWebBackend.Helper;
 using GachaWebBackend.Model;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
@@ -39,6 +40,7 @@ namespace GachaWebBackend.Controllers
     /// 抽卡控制器 用于控制各种抽卡api
     /// </summary>
     [ApiController]
+    [Authorize(Policy = "All")]
     [Route("api/v1/[controller]")]
     public class GachaController : ControllerBase
     {

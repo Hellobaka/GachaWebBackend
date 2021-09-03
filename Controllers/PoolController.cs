@@ -1,6 +1,7 @@
 ﻿using GachaWebBackend.AuthHelper;
 using GachaWebBackend.Helper;
 using GachaWebBackend.Model;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PublicInfos;
 using System;
@@ -10,6 +11,7 @@ using System.Threading;
 namespace GachaWebBackend.Controllers
 {
     [ApiController]
+    [Authorize(Policy = "All")]
     [Route("api/v1/[controller]")]
     public class PoolController : ControllerBase
     {
@@ -56,7 +58,7 @@ namespace GachaWebBackend.Controllers
         {
             try
             {
-                long QQ = JwtHelper.SerializeJwt(Request.Headers["X-Token"].ToString()).Uid;
+                long QQ = WebCommonHelper.GetQQFromJwt(Request.Headers);
                 if (QQ != 0)
                 {
                     WebUser user = SqlHelper.GetUserByID(QQ);
@@ -89,7 +91,7 @@ namespace GachaWebBackend.Controllers
         {
             try
             {
-                long QQ = JwtHelper.SerializeJwt(Request.Headers["X-Token"].ToString()).Uid;
+                long QQ = WebCommonHelper.GetQQFromJwt(Request.Headers);
                 if (QQ != 0)
                 {
                     WebUser user = SqlHelper.GetUserByID(QQ);
@@ -121,7 +123,7 @@ namespace GachaWebBackend.Controllers
         {
             try
             {
-                long QQ = JwtHelper.SerializeJwt(Request.Headers["X-Token"].ToString()).Uid;
+                long QQ = WebCommonHelper.GetQQFromJwt(Request.Headers);
                 if (QQ != 0)
                 {
                     WebUser user = SqlHelper.GetUserByID(QQ);
