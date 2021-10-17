@@ -20,12 +20,12 @@ namespace GachaWebBackend.AuthHelper
         public Task Invoke(HttpContext httpContext)
         {
             //检测是否包含'Authorization'请求头
-            if (!httpContext.Request.Headers.ContainsKey("Authorization"))
+            if (!httpContext.Request.Headers.ContainsKey("x-token"))
             {
                 httpContext.Abort();
                 return _next(httpContext);//不包含授权信息头的http信道
             }
-            var tokenHeader = httpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+            var tokenHeader = httpContext.Request.Headers["x-token"].ToString().Replace("Bearer ", "");
 
             try
             {

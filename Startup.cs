@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using GachaWebBackend.AuthHelper;
+using GachaWebBackend.Controllers;
 using GachaWebBackend.Helper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -55,6 +56,7 @@ namespace GachaWebBackend
             Console.WriteLine($"[+] 载入用户配置与问答");
             sw.Restart();
             SqlHelper.LoadConfig();
+            PoolController.PoolsCache = SQLHelper.GetAllPools();
             sw.Stop();
             Console.WriteLine($"[+] 载入完成，耗时: {sw.ElapsedMilliseconds} ms");
 
