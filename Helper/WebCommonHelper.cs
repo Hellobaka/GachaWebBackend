@@ -92,9 +92,54 @@ namespace GachaWebBackend.Helper
             }
             return output.ToString();
         }
+        /// <summary>
+        /// 从头的JWT授权字段中获取用户信息主键
+        /// </summary>
+        /// <param name="header">Request.Headers</param>
         public static long GetQQFromJwt(Microsoft.AspNetCore.Http.IHeaderDictionary header)
         {
             return JwtHelper.SerializeJwt(header["Authorization"].ToString().Replace("Bearer ", "")).Uid;
+        }
+        /// <summary>
+        /// 使用APIKey查询用户信息
+        /// </summary>
+        public static WebUser GetRoleFromAPIKey(string APIKey)
+        {
+            return SqlHelper.GetUserByAPIKey(APIKey);
+        }
+        /// <summary>
+        /// 重载
+        /// </summary>
+        public static void AddActionSuccessRecord(string IP, long QQ, string actionName, string actionInfo)
+        {
+            AddActionSuccessRecord(IP, QQ.ToString(), actionName, actionInfo);
+        }
+        /// <summary>
+        /// 添加操作成功日志，时间默认是触发时间
+        /// </summary>
+        /// <param name="QQ">操作者QQ</param>
+        /// <param name="actionName">操作名称</param>
+        /// <param name="actionInfo">操作备注</param>
+        public static void AddActionSuccessRecord(string IP, string QQ, string actionName, string actionInfo)
+        {
+            SqlHelper.AddRecordAsync(IP, QQ, actionName, "成功", actionInfo, DateTime.Now);
+        }
+        /// <summary>
+        /// 重载
+        /// </summary>
+        public static void AddActionFailRecord(string IP, long QQ, string actionName, string actionInfo)
+        {
+            AddActionFailRecord(IP, QQ.ToString(), actionName, actionInfo);
+        }
+        /// <summary>
+        /// 添加操作失败日志，时间默认是触发时间
+        /// </summary>
+        /// <param name="QQ">操作者QQ</param>
+        /// <param name="actionName">操作名称</param>
+        /// <param name="actionInfo">操作备注</param>
+        public static void AddActionFailRecord(string IP, string QQ, string actionName, string actionInfo)
+        {
+            SqlHelper.AddRecordAsync(IP, QQ, actionName, "失败", actionInfo, DateTime.Now);
         }
         //https://www.cnblogs.com/xwcs/p/13508438.html
         /// <summary>

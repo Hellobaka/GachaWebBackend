@@ -1,12 +1,11 @@
-﻿using GachaWebBackend.AuthHelper;
-using GachaWebBackend.Helper;
+﻿using GachaWebBackend.Helper;
 using GachaWebBackend.Model;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PublicInfos;
 using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 
 namespace GachaWebBackend.Controllers
 {
@@ -15,43 +14,48 @@ namespace GachaWebBackend.Controllers
     [Route("api/v1/[controller]")]
     public class PoolController : ControllerBase
     {
-        static string PoolsCache = "";
+        string _requestIP = "";
+        string RequestIP
+        {
+            get
+            {
+                _requestIP = Request.HttpContext.Connection.RemoteIpAddress?.ToString();
+                return _requestIP;
+            }
+            set
+            {
+                _requestIP = value;
+            }
+        }
+        /// <summary>
+        /// 卡池储存
+        /// </summary>
+        public static List<Pool> PoolsCache;
         /// <summary>
         /// 返回数据
         /// </summary>
-        /// <returns></returns>
         [HttpGet]
         [Route("getAll")]
         public ApiResponse GetAll(bool updateCache = false)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(PoolsCache) || updateCache)
-                    CallCache();
-                return WebCommonHelper.SetOk("查询成功", WebCommonHelper.WriteGzip(PoolsCache));
+                if(updateCache)
+                    PoolsCache = SQLHelper.GetAllPools();
+                WebCommonHelper.AddActionSuccessRecord(RequestIP, "", "卡池获取", "");
+                return WebCommonHelper.SetOk("查询成功", WebCommonHelper.WriteGzip(PoolsCache.ToJson()));
             }
             catch (Exception e)
             {
                 Response.StatusCode = 404;
+                WebCommonHelper.AddActionFailRecord(RequestIP, "", "卡池获取", e.Message);
                 return WebCommonHelper.SetError(e.Message + "\n" + e.StackTrace);
             }
         }
         /// <summary>
-        /// 卡池缓存
+        /// 设置收藏卡池
         /// </summary>
-        /// <param name="cacheTimeOut">缓存过期时长</param>
-        public void CallCache(int cacheTimeOut = 12 * 60 * 60 * 1000)
-        {
-            PoolsCache = SQLHelper.GetAllPools().ToJson();
-            WebCommonHelper.OutSuccessLog($"卡池缓存成功，在{cacheTimeOut / 1000}秒之后缓存失效");
-
-            Thread thread = new(() =>
-            {
-                Thread.Sleep(cacheTimeOut);
-                PoolsCache = string.Empty;
-            });
-            thread.Start();
-        }
+        /// <param name="poolID">卡池ID</param>
         [HttpGet]
         [Route("setLike")]
         public ApiResponse SetLike(int poolID)
@@ -71,6 +75,7 @@ namespace GachaWebBackend.Controllers
                         user.SavedPools.Add(poolID);
                         user.UpdateUser();
                     }
+                    WebCommonHelper.AddActionSuccessRecord(RequestIP, "", "收藏卡池", "");
                     return WebCommonHelper.SetOk();
                 }
                 else
@@ -81,10 +86,15 @@ namespace GachaWebBackend.Controllers
             catch (Exception e)
             {
                 Response.StatusCode = 404;
+                WebCommonHelper.AddActionFailRecord(RequestIP, "", "收藏卡池", e.Message);
                 return WebCommonHelper.SetError(e.Message);
             }
-
         }
+        /// <summary>
+        /// 设置取消收藏卡池
+        /// </summary>
+        /// <param name="poolID"></param>
+        /// <returns></returns>
         [HttpGet]
         [Route("setUnLike")]
         public ApiResponse SetUnLike(int poolID)
@@ -104,6 +114,7 @@ namespace GachaWebBackend.Controllers
                         user.SavedPools.Remove(poolID);
                         user.UpdateUser();
                     }
+                    WebCommonHelper.AddActionSuccessRecord(RequestIP, "", "取消收藏卡池", "");
                     return WebCommonHelper.SetOk();
                 }
                 else
@@ -114,9 +125,14 @@ namespace GachaWebBackend.Controllers
             catch (Exception e)
             {
                 Response.StatusCode = 404;
+                WebCommonHelper.AddActionFailRecord(RequestIP, "", "取消收藏卡池", e.Message);
                 return WebCommonHelper.SetError(e.Message);
             }
         }
+        /// <summary>
+        /// 获取收藏状态
+        /// </summary>
+        /// <param name="poolID"></param>
         [HttpGet]
         [Route("checkLike")]
         public ApiResponse CheckLikeStatus(int poolID)
@@ -131,6 +147,7 @@ namespace GachaWebBackend.Controllers
                     {
                         throw new Exception("QQ无效");
                     }
+                    WebCommonHelper.AddActionSuccessRecord(RequestIP, "", "获取收藏状态", "");
                     return WebCommonHelper.SetOk("ok", new { status = user.SavedPools.Any(x => x == poolID) });
                 }
                 else
@@ -141,6 +158,7 @@ namespace GachaWebBackend.Controllers
             catch (Exception e)
             {
                 Response.StatusCode = 404;
+                WebCommonHelper.AddActionFailRecord(RequestIP, "", "获取收藏状态", e.Message);
                 return WebCommonHelper.SetError(e.Message);
             }
         }

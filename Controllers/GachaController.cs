@@ -3,12 +3,15 @@ using GachaWebBackend.Model;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Threading;
 
 namespace GachaWebBackend.Controllers
 {
+
     /// <summary>
     /// 试用生成限额 单ip默认10次 每600秒加一次
     /// </summary>
@@ -40,10 +43,23 @@ namespace GachaWebBackend.Controllers
     /// 抽卡控制器 用于控制各种抽卡api
     /// </summary>
     [ApiController]
-    [Authorize(Policy = "All")]
     [Route("api/v1/[controller]")]
     public class GachaController : ControllerBase
     {
+        string _requestIP = "";
+        string RequestIP
+        {
+            get
+            {
+                _requestIP = Request.HttpContext.Connection.RemoteIpAddress?.ToString();
+                return _requestIP;
+            }
+            set
+            {
+                _requestIP = value;
+            }
+        }
+
         /// <summary>
         /// 对试用抽卡额度的记录
         /// </summary>
@@ -55,32 +71,74 @@ namespace GachaWebBackend.Controllers
         /// <param name="multiMode">单抽或多抽</param>
         /// <returns></returns>
         [HttpGet]
+        [Authorize(Policy = "All")]
         [Route("testGacha")]
         public ApiResponse TestGacha(int poolID, bool multiMode)
         {
-            string ip = Request.HttpContext.Connection.RemoteIpAddress?.ToString();
-            if (string.IsNullOrWhiteSpace(ip))
+            try
             {
-                return WebCommonHelper.SetError($"捕获IP失败，请确认未使用代理服务器绕过限额检测");
-            }
-            int count = HandleCallNumber(ip);
-            ApiCallCount callStatus = CallNumber[ip];
-            if (count == -1)
-            {
-                return WebCommonHelper.SetError($"超出限额", callStatus);
-            }
+                string ip = RequestIP;
+                if (string.IsNullOrWhiteSpace(ip))
+                    throw new Exception($"捕获IP失败，请确认未使用代理服务器绕过限额检测");
+                int count = HandleCallNumber(ip);
+                ApiCallCount callStatus = CallNumber[ip];
+                if (count == -1)
+                {
+                    WebCommonHelper.AddActionFailRecord(RequestIP, "", "测试图片生成", "超出限额");
+                    return WebCommonHelper.SetError($"超出限额", callStatus);
+                }
 
-            string picPath = GachaHelper.GenerateGachaPic(poolID, multiMode);
-            if (string.IsNullOrWhiteSpace(picPath))
-            {
-                return WebCommonHelper.SetError("图片生成失败，详情参照控制台");
-            }
+                string picPath = GachaHelper.GenerateGachaPic(poolID, multiMode);
+                if (string.IsNullOrWhiteSpace(picPath))
+                    throw new Exception("图片生成失败，详情参照控制台");
 
-            using var img = Image.FromFile(picPath);
-            return WebCommonHelper.SetOk("ok",
-                new {callStatus.CallCount, callStatus.AddSecond, Img = WebCommonHelper.Image2Base64(img)});
+                using var img = Image.FromFile(picPath);
+                WebCommonHelper.AddActionSuccessRecord(ip, "", "测试图片生成", "");
+                return WebCommonHelper.SetOk("ok",
+                    new { callStatus.CallCount, callStatus.AddSecond, Img = WebCommonHelper.Image2Base64(img) });
+            }
+            catch(Exception ex)
+            {
+                WebCommonHelper.OutSuccessLog($"测试图片生成失败，{ex.Message}");
+                WebCommonHelper.AddActionFailRecord(RequestIP, "", "测试图片生成", ex.Message);
+                return WebCommonHelper.SetError(ex.Message);
+            }            
         }
-        
+        /// <summary>
+        /// 使用APIKey限定进行抽卡
+        /// </summary>
+        /// <param name="APIKey">平台分发的APIKey</param>
+        /// <param name="poolID">需要抽取卡池的ID</param>
+        /// <param name="multiMode">单抽或多抽</param>
+        [HttpGet]
+        [Route("doGacha")]
+        public ApiResponse GetGachaResult(string APIKey, int poolID, bool multiMode)
+        {
+            var user = WebCommonHelper.GetRoleFromAPIKey(APIKey);
+            try
+            {
+                if (user == null)
+                    throw new Exception("无关联APIKey");
+                if (PoolController.PoolsCache.Any(x => x.PoolID == poolID) is false || user.SavedPools.Any(x => x == poolID) is false)
+                    throw new Exception("未找到相关卡池，可能需要先在卡池预览中收藏该卡池");
+
+                string picPath = GachaHelper.GenerateGachaPic(poolID, multiMode);
+                if (string.IsNullOrWhiteSpace(picPath))
+                    throw new Exception("图片生成失败，详情参照控制台");
+
+                using var img = Image.FromFile(picPath);
+                WebCommonHelper.AddActionSuccessRecord(RequestIP, user.QQ.ToString(), "抽卡图片生成", "");
+                return WebCommonHelper.SetOk("ok",
+                    new { Img = WebCommonHelper.Image2Base64(img) });
+            }
+            catch (Exception ex)
+            {
+                string o = user == null ? APIKey : user.QQ.ToString();
+                WebCommonHelper.OutErrorLog($"抽卡图片生成失败，Error：{ex.Message}");
+                WebCommonHelper.AddActionFailRecord(RequestIP, o, "抽卡图片生成", ex.Message);
+                return WebCommonHelper.SetError(ex.Message);
+            }            
+        }
         /// <summary>
         /// 处理试用限额
         /// </summary>

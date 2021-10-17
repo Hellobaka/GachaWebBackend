@@ -1,9 +1,7 @@
 ﻿using GachaWebBackend.AuthHelper;
 using GachaWebBackend.Helper;
 using GachaWebBackend.Model;
-using CustomGacha.SDK.Tool.Http;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -23,6 +21,23 @@ namespace GachaWebBackend.Controllers
     [Route("api/v1/user")]
     public class WebUserController : ControllerBase
     {
+        string _requestIP = "";
+        string RequestIP
+        {
+            get
+            {
+                _requestIP = Request.HttpContext.Connection.RemoteIpAddress?.ToString();
+                return _requestIP;
+            }
+            set
+            {
+                _requestIP = value;
+            }
+        }
+        /// <summary>
+        /// 邮箱验证码校验
+        /// </summary>
+        static Dictionary<string, CaptchaSave> emailCaptcha = new();
         /// <summary>
         /// 登录
         /// </summary>
@@ -42,11 +57,13 @@ namespace GachaWebBackend.Controllers
                 JwtHelper.TokenModelJwt tokenModel = new() { Uid = userRole.QQ, Role = userRole.Developer == 1 ? "Developer" : "User" };
                 jwtStr = JwtHelper.IssueJwt(tokenModel);//登录，获取到一定规则的 Token 令牌
                 WebCommonHelper.OutSuccessLog($"登录成功: 用户名: {name} 密码: {pass} Token: {jwtStr}");
+                WebCommonHelper.AddActionSuccessRecord(RequestIP, userRole.QQ, "登录", "");
                 return WebCommonHelper.SetOk("ok", jwtStr);
             }
             else
             {
                 WebCommonHelper.OutErrorLog($"登录失败 用户名或密码错误: 用户名: {name} 密码: {pass}");
+                WebCommonHelper.AddActionFailRecord(RequestIP, userRole.QQ, "登录", "用户名或密码错误");
                 return WebCommonHelper.SetError("用户名或密码错误");
             }
         }
@@ -58,16 +75,25 @@ namespace GachaWebBackend.Controllers
         [Route("register")]
         public ApiResponse Register(WebUser user)
         {
-            var flag = SqlHelper.Register(user);
-            if (flag) 
+            try
             {
-                WebCommonHelper.OutSuccessLog($"用户注册成功: QQ: {user.QQ} Email: {user.Email}");
-                return WebCommonHelper.SetOk(); 
+                if (emailCaptcha.Any(x=>x.Value.Email==user.Email && x.Value.Pass) is false || emailCaptcha[user.Email].Code==0)
+                    throw new Exception("请先使用邮箱验证码或验证码已过期");
+                var flag = SqlHelper.Register(user);
+                if (flag)
+                {
+                    WebCommonHelper.OutSuccessLog($"用户注册成功: QQ: {user.QQ} Email: {user.Email}");
+                    WebCommonHelper.AddActionSuccessRecord(RequestIP, user.QQ, "注册", "");
+                    return WebCommonHelper.SetOk();
+                }
+                else
+                    throw new Exception("QQ或邮箱重复注册");
             }
-            else
+            catch (Exception ex)
             {
                 WebCommonHelper.OutErrorLog($"注册失败: QQ: {user.QQ} Email: {user.Email}");
-                return WebCommonHelper.SetError("QQ或邮箱重复注册");
+                WebCommonHelper.AddActionFailRecord(RequestIP, user.QQ, "注册", ex.Message);
+                return WebCommonHelper.SetError(ex.Message);
             }
         }
         /// <summary>
@@ -82,11 +108,13 @@ namespace GachaWebBackend.Controllers
             if (flag)
             {
                 WebCommonHelper.OutSuccessLog($"注册邮箱未被使用: Email: {email}");
+                WebCommonHelper.AddActionSuccessRecord(RequestIP, "", "查询邮箱", "未被使用");
                 return WebCommonHelper.SetOk(); 
             }
             else
             {
                 WebCommonHelper.OutErrorLog($"注册邮箱重复使用: Email: {email}");
+                WebCommonHelper.AddActionFailRecord(RequestIP, "", "查询邮箱", "已被使用");
                 return WebCommonHelper.SetOk("此邮箱已被使用");
             }
         }
@@ -102,14 +130,19 @@ namespace GachaWebBackend.Controllers
             if (flag)
             {
                 WebCommonHelper.OutSuccessLog($"注册QQ未被使用: QQ: {QQ}");
+                WebCommonHelper.AddActionSuccessRecord(RequestIP, "", "查询QQ", "未被使用");
                 return WebCommonHelper.SetOk();
             }
             else
             {
                 WebCommonHelper.OutErrorLog($"注册QQ重复使用: QQ: {QQ}");
+                WebCommonHelper.AddActionFailRecord(RequestIP, "", "查询QQ", "已被使用");
                 return WebCommonHelper.SetOk("此QQ已被使用"); 
             }
         }
+        /// <summary>
+        /// 校验腾讯图形验证码
+        /// </summary>
         [HttpGet]
         [Route("verifycaptcha")]
         public ApiResponse VerifyCaptcha(string randstr, string ticket, string ip)
@@ -137,21 +170,26 @@ namespace GachaWebBackend.Controllers
                 req.AppSecretKey = secret["CaptchaAppSecretKey"].ToString();
                 DescribeCaptchaResultResponse resp = client.DescribeCaptchaResultSync(req);
                 WebCommonHelper.OutSuccessLog($"腾讯云图形验证码校验成功, randstr: {randstr} ticket: {ticket} ip: {ip}");
+                WebCommonHelper.AddActionSuccessRecord(RequestIP, "", "邮箱验证码校验", "");
                 return WebCommonHelper.SetOk("ok", resp);
             }
             catch (Exception e)
             {
                 WebCommonHelper.OutErrorLog($"腾讯云图形验证码校验失败: {e.Message}");
+                WebCommonHelper.AddActionFailRecord(RequestIP, "", "邮箱验证码校验", e.Message);
                 return WebCommonHelper.SetError();
             }
         }
-
-        static Dictionary<string, CaptchaSave> emailCaptcha = new();
+        /// <summary>
+        /// 获取邮箱验证码
+        /// </summary>
+        /// <param name="address">邮箱地址</param>
         [HttpGet]
         [Route("getemailcaptcha")]
         public ApiResponse EmailCaptcha(string address)
         {
-            var flag = SqlHelper.VerifyEmail(address);
+            //列表存在这个邮箱而且不在限时中
+            var flag = emailCaptcha.Any(x => x.Value.Email == address && !x.Value.CanReGet) || SqlHelper.VerifyEmail(address);//是否邮箱已使用过
             if (!flag)
             {
                 int code;
@@ -164,49 +202,85 @@ namespace GachaWebBackend.Controllers
                 WebCommonHelper.SendEmail(WebCommonHelper.GetTemplateMail("屑平台邮箱验证", $"验证码:{code}，有效期5分钟", new string[] { address }));
                 Thread thread = new(()=> 
                 {
-                    Thread.Sleep(5 * 60 * 1000);
+                    Thread.Sleep(1 * 60 * 1000);
+                    emailCaptcha[sessionID].CanReGet = true;
+                    Thread.Sleep(4 * 60 * 1000);
                     WebCommonHelper.OutSuccessLog($"验证码销毁成功，用户: {address} SessionID: {sessionID} 验证码: {code}");
+                    WebCommonHelper.AddActionSuccessRecord("self", "", "邮箱验证码", $"已销毁, 用户: {address} SessionID: {sessionID} 验证码: {code}");
                     emailCaptcha.Remove(sessionID);
                 });
                 thread.Start();
                 WebCommonHelper.OutSuccessLog($"验证码获取成功，用户: {address} SessionID: {sessionID} 验证码: {code}");
+                WebCommonHelper.AddActionSuccessRecord(RequestIP, "", "邮箱验证码", $"验证码获取成功，用户: {address} SessionID: {sessionID} 验证码: {code}");
                 return WebCommonHelper.SetOk("ok", sessionID);
             }
-            WebCommonHelper.OutErrorLog($"邮箱未注册: {address}");
-            return WebCommonHelper.SetError("无效的邮箱");
+            if(emailCaptcha.Any(x => x.Value.Email == address && !x.Value.CanReGet))
+            {
+                WebCommonHelper.OutErrorLog($"邮箱验证码，邮箱验证码仍在等待队列中: {address}");
+                WebCommonHelper.AddActionFailRecord(RequestIP, "", "邮箱验证码", $"邮箱验证码仍在等待队列中，用户: {address}");
+                return WebCommonHelper.SetError("邮箱验证码仍在等待队列中");
+            }
+            else
+            {
+                WebCommonHelper.OutErrorLog($"邮箱验证码，邮箱已注册: {address}");
+                WebCommonHelper.AddActionFailRecord(RequestIP, "", "邮箱验证码", $"邮箱未注册，用户: {address}");
+                return WebCommonHelper.SetError("邮箱已注册");
+            }
         }
+        /// <summary>
+        /// 校验邮件验证码
+        /// </summary>
+        /// <param name="code">邮箱验证码</param>
+        /// <param name="sessionID">sessionID</param>
         [HttpGet]
         [Route("verifyemailcaptcha")]
         public ApiResponse VerifyEmailCaptcha(int code, string sessionID)
         {
+            string msg;
             if (string.IsNullOrWhiteSpace(sessionID) || code < 100000)
             {
-                WebCommonHelper.OutErrorLog($"参数无效，sessionID: {sessionID} code: {code}");
+                msg = $"参数无效，sessionID: {sessionID} code: {code}";
+                WebCommonHelper.OutErrorLog(msg);
+                WebCommonHelper.AddActionFailRecord(RequestIP, "", "验证邮箱验证码", msg);
                 return WebCommonHelper.SetError("参数无效"); 
             }
             if(emailCaptcha.ContainsKey(sessionID) && emailCaptcha[sessionID].Code == code)
             {
-                WebCommonHelper.OutSuccessLog($"验证码验证成功，用户: {emailCaptcha[sessionID].Email}");
+                msg = $"验证码验证成功，用户: {emailCaptcha[sessionID].Email}";
+                WebCommonHelper.OutSuccessLog(msg);
+                WebCommonHelper.AddActionSuccessRecord(RequestIP, "", "验证邮箱验证码", msg);
+                emailCaptcha[sessionID].Pass = true;
                 return WebCommonHelper.SetOk();
             }
             else
             {
                 WebCommonHelper.OutErrorLog($"验证码验证失败");
+                WebCommonHelper.AddActionFailRecord(RequestIP, "", "验证邮箱验证码", "无效的验证码");
                 return WebCommonHelper.SetError("无效的验证码，若确认无误尝试重新获取");
             }
         }
+        /// <summary>
+        /// 重置密码
+        /// </summary>
+        /// <param name="sessionID"></param>
+        /// <param name="newpwd"></param>
         [HttpGet]
         [Route("resetpwd")]
         public ApiResponse ResetPassword(string sessionID, string newpwd)
         {
+            string msg;
             if (string.IsNullOrWhiteSpace(sessionID) || string.IsNullOrWhiteSpace(newpwd))
             {
-                WebCommonHelper.OutErrorLog($"重置密码参数无效, sessionID: {sessionID} newpwd: {newpwd}");
+                msg = $"重置密码参数无效, sessionID: {sessionID} newpwd: {newpwd}";
+                WebCommonHelper.OutErrorLog(msg);
+                WebCommonHelper.AddActionFailRecord(RequestIP, "", "重置密码", msg);
                 return WebCommonHelper.SetError($"参数无效"); 
             }
             if(emailCaptcha.ContainsKey(sessionID) is false)
             {
-                WebCommonHelper.OutErrorLog($"Session无效, sessionID: {sessionID} newpwd: {newpwd}");
+                msg = $"Session无效, sessionID: {sessionID} newpwd: {newpwd}";
+                WebCommonHelper.OutErrorLog(msg);
+                WebCommonHelper.AddActionFailRecord(RequestIP, "", "重置密码", msg);
                 return WebCommonHelper.SetError("Session无效，请刷新页面重新获取验证码");
             }
             string email = emailCaptcha[sessionID].Email;
@@ -214,14 +288,20 @@ namespace GachaWebBackend.Controllers
             {
                 SqlHelper.ResetPassword(email, WebCommonHelper.MD5Encrypt(newpwd));
                 WebCommonHelper.OutSuccessLog($"重置密码成功: 用户: {email} 新密码: {newpwd}");
+                WebCommonHelper.AddActionSuccessRecord(RequestIP, "", "重置密码", "");
                 return WebCommonHelper.SetOk();
             }
             catch (Exception e)
             {
                 WebCommonHelper.OutErrorLog($"重置密码失败: {e.Message}");
+                WebCommonHelper.AddActionFailRecord(RequestIP, "", "重置密码", e.Message);
                 return WebCommonHelper.SetError("重置失败，请重试");
             }
         }
+        /// <summary>
+        /// 使用Token获取用户信息
+        /// </summary>
+        /// <param name="token"></param>
         [HttpGet]
         [Route("getuserinfo")]
         public ApiResponse GetUserInfo(string token)
@@ -229,14 +309,21 @@ namespace GachaWebBackend.Controllers
             if (string.IsNullOrWhiteSpace(token))
             {
                 WebCommonHelper.OutErrorLog($"获取用户信息 无效Token: token: {token}");
+                WebCommonHelper.AddActionFailRecord(RequestIP, "", "获取用户信息", "无效Token");
                 return WebCommonHelper.SetError("无效参数");
             }
             var c = JwtHelper.SerializeJwt(token);
             WebUser user = SqlHelper.GetUserByID(c.Uid);
             user.Password = "***";
             WebCommonHelper.OutSuccessLog($"用户已获取信息: QQ: {user.QQ}");
+            WebCommonHelper.AddActionSuccessRecord(RequestIP, "", "获取用户信息", $"QQ: {user.QQ}");
             return WebCommonHelper.SetOk("ok", user);
         }
+        /// <summary>
+        /// 登出
+        /// </summary>
+        /// <param name="json"></param>
+        /// <returns></returns>
         [HttpPost]
         [Route("logout")]
         public ApiResponse Logout(JObject json) 
