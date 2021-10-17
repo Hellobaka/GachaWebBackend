@@ -2,6 +2,7 @@
 using PublicInfos;
 using SqlSugar;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace GachaWebBackend.Helper
@@ -35,7 +36,8 @@ namespace GachaWebBackend.Helper
                 db.CodeFirst.InitTables(typeof(Config));
                 db.CodeFirst.InitTables(typeof(OrderConfig));
                 db.CodeFirst.InitTables(typeof(Category));
-                db.CodeFirst.InitTables(typeof(ApiAuth));
+                //db.CodeFirst.InitTables(typeof(ApiAuth));
+                db.CodeFirst.InitTables(typeof(ActionRecord));
                 db.CodeFirst.InitTables(typeof(WebUser));
             }
         }
@@ -55,6 +57,11 @@ namespace GachaWebBackend.Helper
             using var db = GetInstance();
             return db.Queryable<WebUser>().First(x => x.QQ == QQ);
         }
+        public static WebUser GetUserByAPIKey(string APIKey)
+        {
+            using var db = GetInstance();
+            return db.Queryable<WebUser>().First(x => x.APIKey == APIKey);
+        }
         public static bool Register(WebUser user)
         {
             using var db = GetInstance();
@@ -63,17 +70,17 @@ namespace GachaWebBackend.Helper
             user.Password = WebCommonHelper.MD5Encrypt(user.Password);
             try
             {
-                if(db.Queryable<WebUser>().Any(x=> x.QQ == user.QQ || x.Email == user.Email))
+                if (db.Queryable<WebUser>().Any(x => x.QQ == user.QQ || x.Email == user.Email))
                 {
                     return false;
                 }
                 db.Insertable(user).ExecuteCommand();
                 return true;
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Console.WriteLine("[-] Register Error:" + e.Message);
-                return false; 
+                return false;
             }
         }
         public static bool VerifyQQ(long QQ)
@@ -158,6 +165,24 @@ namespace GachaWebBackend.Helper
             {
                 db.Updateable(config).ExecuteCommand();
             }
+        }
+        #endregion
+
+        #region ActionRecord
+        public static void AddRecordAsync(string IP, string QQ, string actionName, string status, string actionInfo, DateTime time)
+        {
+            using var db = GetInstance();
+            db.Insertable(new ActionRecord {IP= IP, Operator = QQ, Action = actionName, Status = status, Info = actionInfo, Time = time }).ExecuteCommandAsync();
+        }
+        public static List<ActionRecord> GetRecordsByQQ(string QQ)
+        {
+            using var db = GetInstance();
+            return db.Queryable<ActionRecord>().Where(x => x.Operator == QQ).ToList();
+        }
+        public static List<ActionRecord> GetRecordsRecently(int day = 1)
+        {
+            using var db = GetInstance();
+            return db.Queryable<ActionRecord>().Where(x => x.Time >= DateTime.Now.AddDays(day * -1)).ToList();
         }
         #endregion
     }
