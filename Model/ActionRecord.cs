@@ -21,6 +21,10 @@ namespace GachaWebBackend.Model
         /// </summary>
         public string Action { get; set; }
         /// <summary>
+        /// 使用的APIKey
+        /// </summary>
+        public string APIKey { get; set; }
+        /// <summary>
         /// 操作状态
         /// </summary>
         public string Status { get; set; }

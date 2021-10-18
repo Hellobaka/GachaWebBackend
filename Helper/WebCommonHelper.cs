@@ -110,36 +110,40 @@ namespace GachaWebBackend.Helper
         /// <summary>
         /// 重载
         /// </summary>
-        public static void AddActionSuccessRecord(string IP, long QQ, string actionName, string actionInfo)
+        public static void AddActionSuccessRecord(string IP, long QQ, string actionName, string actionInfo, string APIKey="")
         {
-            AddActionSuccessRecord(IP, QQ.ToString(), actionName, actionInfo);
+            AddActionSuccessRecord(IP, QQ.ToString(), actionName, actionInfo, APIKey);
         }
         /// <summary>
         /// 添加操作成功日志，时间默认是触发时间
         /// </summary>
+        /// <param name="IP">请求来源IP</param>
         /// <param name="QQ">操作者QQ</param>
         /// <param name="actionName">操作名称</param>
         /// <param name="actionInfo">操作备注</param>
-        public static void AddActionSuccessRecord(string IP, string QQ, string actionName, string actionInfo)
+        /// <param name="APIKey">使用的APIKey</param>
+        public static void AddActionSuccessRecord(string IP, string QQ, string actionName, string actionInfo, string APIKey="")
         {
-            SqlHelper.AddRecordAsync(IP, QQ, actionName, "成功", actionInfo, DateTime.Now);
+            SqlHelper.AddRecordAsync(IP, QQ, APIKey, actionName, "成功", actionInfo, DateTime.Now);
         }
         /// <summary>
         /// 重载
         /// </summary>
-        public static void AddActionFailRecord(string IP, long QQ, string actionName, string actionInfo)
+        public static void AddActionFailRecord(string IP, long QQ, string actionName, string actionInfo, string APIKey = "")
         {
-            AddActionFailRecord(IP, QQ.ToString(), actionName, actionInfo);
+            AddActionFailRecord(IP, QQ.ToString(), actionName, actionInfo, APIKey);
         }
         /// <summary>
         /// 添加操作失败日志，时间默认是触发时间
         /// </summary>
+        /// <param name="IP">请求来源IP</param>
         /// <param name="QQ">操作者QQ</param>
         /// <param name="actionName">操作名称</param>
         /// <param name="actionInfo">操作备注</param>
-        public static void AddActionFailRecord(string IP, string QQ, string actionName, string actionInfo)
+        /// <param name="APIKey">使用的APIKey</param>
+        public static void AddActionFailRecord(string IP, string QQ, string actionName, string actionInfo, string APIKey="")
         {
-            SqlHelper.AddRecordAsync(IP, QQ, actionName, "失败", actionInfo, DateTime.Now);
+            SqlHelper.AddRecordAsync(IP, QQ,APIKey, actionName, "失败", actionInfo, DateTime.Now);
         }
         //https://www.cnblogs.com/xwcs/p/13508438.html
         /// <summary>
@@ -199,7 +203,7 @@ namespace GachaWebBackend.Helper
         public static E_Mail GetTemplateMail(string subject, string body, string[] address)
         {
             JObject secret = JObject.Parse(File.ReadAllText(Appsettings.app(new[] { "SecretConfig" })));
-            return new E_Mail() 
+            return new E_Mail()
             {
                 Address = address,
                 Body = body,
@@ -216,7 +220,7 @@ namespace GachaWebBackend.Helper
                 Priority = MailPriority.Normal,
                 CC = Array.Empty<string>(),
                 Subject = subject
-            };            
+            };
         }
 
         /// <summary>
@@ -264,7 +268,7 @@ namespace GachaWebBackend.Helper
             img.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
             ms.Position = 0;
             byte[] b = new byte[ms.Length];
-            ms.Read(b, 0, (int) ms.Length);
+            ms.Read(b, 0, (int)ms.Length);
             return Convert.ToBase64String(b);
         }
     }

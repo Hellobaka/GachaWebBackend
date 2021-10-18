@@ -169,10 +169,10 @@ namespace GachaWebBackend.Helper
         #endregion
 
         #region ActionRecord
-        public static void AddRecordAsync(string IP, string QQ, string actionName, string status, string actionInfo, DateTime time)
+        public static void AddRecordAsync(string IP, string QQ, string APIKey, string actionName, string status, string actionInfo, DateTime time)
         {
             using var db = GetInstance();
-            db.Insertable(new ActionRecord {IP= IP, Operator = QQ, Action = actionName, Status = status, Info = actionInfo, Time = time }).ExecuteCommandAsync();
+            db.Insertable(new ActionRecord {IP= IP, Operator = QQ, APIKey=APIKey, Action = actionName, Status = status, Info = actionInfo, Time = time }).ExecuteCommandAsync();
         }
         public static List<ActionRecord> GetRecordsByQQ(string QQ)
         {
