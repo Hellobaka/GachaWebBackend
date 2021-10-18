@@ -330,5 +330,28 @@ namespace GachaWebBackend.Controllers
         {
             return WebCommonHelper.SetOk();
         }
+        [HttpGet]
+        [Route("GetActionRecords")]
+        public ApiResponse GetActionRecords() 
+        {
+            var user = WebCommonHelper.GetQQFromJwt(Request.Headers);
+            try
+            {
+                var actions = SqlHelper.GetRecordsByQQ(user.ToString());
+                actions = actions.Where(x => x.Time > x.Time.AddMonths(-1) && string.IsNullOrEmpty(x.APIKey) is false).OrderByDescending(x=>x.Time).ToList();
+                List<object> list = new List<object>();
+                foreach (var action in actions)
+                    list.Add(new { RequestIP=action.IP, action.Action, action.Time, action.Info });
+                WebCommonHelper.OutSuccessLog($"获取操作日志, QQ: {user}");
+                WebCommonHelper.AddActionSuccessRecord(RequestIP, user, "获取操作日志", "");
+                return WebCommonHelper.SetOk("ok", list);
+            }
+            catch(Exception ex)
+            {
+                WebCommonHelper.OutErrorLog($"获取操作日志失败, QQ: {user}");
+                WebCommonHelper.AddActionFailRecord(RequestIP, "", "获取操作日志", ex.Message);
+                return WebCommonHelper.SetError("error", ex.Message);
+            }
+        }
     }
 }
