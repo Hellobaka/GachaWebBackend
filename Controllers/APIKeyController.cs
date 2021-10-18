@@ -28,6 +28,7 @@ namespace GachaWebBackend.Controllers
         /// 生成
         /// </summary>
         [HttpGet]
+        [Route("GenerateKey")]
         public ApiResponse GenerateKey(bool reGen = false)
         {
             var user = SqlHelper.GetUserByID(WebCommonHelper.GetQQFromJwt(Request.Headers));

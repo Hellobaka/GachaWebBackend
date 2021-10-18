@@ -120,14 +120,14 @@ namespace GachaWebBackend.Controllers
                 if (user == null)
                     throw new Exception("无关联APIKey");
                 if (PoolController.PoolsCache.Any(x => x.PoolID == poolID) is false || user.SavedPools.Any(x => x == poolID) is false)
-                    throw new Exception("未找到相关卡池，可能需要先在卡池预览中收藏该卡池");
+                    throw new Exception($"poolID={poolID} multiMode={multiMode} msg=未找到相关卡池，可能需要先在卡池预览中收藏该卡池");
 
                 string picPath = GachaHelper.GenerateGachaPic(poolID, multiMode);
                 if (string.IsNullOrWhiteSpace(picPath))
-                    throw new Exception("图片生成失败，详情参照控制台");
+                    throw new Exception($"poolID={poolID} multiMode={multiMode} msg=图片生成失败，详情参照控制台");
 
                 using var img = Image.FromFile(picPath);
-                WebCommonHelper.AddActionSuccessRecord(RequestIP, user.QQ.ToString(), "抽卡图片生成", "");
+                WebCommonHelper.AddActionSuccessRecord(RequestIP, user.QQ.ToString(), "抽卡图片生成", $"poolID={poolID} multiMode={multiMode}", APIKey);
                 return WebCommonHelper.SetOk("ok",
                     new { Img = WebCommonHelper.Image2Base64(img) });
             }
@@ -135,7 +135,7 @@ namespace GachaWebBackend.Controllers
             {
                 string o = user == null ? APIKey : user.QQ.ToString();
                 WebCommonHelper.OutErrorLog($"抽卡图片生成失败，Error：{ex.Message}");
-                WebCommonHelper.AddActionFailRecord(RequestIP, o, "抽卡图片生成", ex.Message);
+                WebCommonHelper.AddActionFailRecord(RequestIP, o, "抽卡图片生成", ex.Message, APIKey);
                 return WebCommonHelper.SetError(ex.Message);
             }            
         }
